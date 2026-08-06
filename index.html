@@ -1,21 +1,229 @@
-
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Blog Tech</title>
+    <title>Minha Primeira Galeria - GitHub</title>
+
+    <style>
+        /* Reset básico para limpar margens do navegador */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        /* Barra de Pesquisa */
+        #search-bar {
+            margin-top: 20px;
+            padding: 10px 20px;
+            width: 90%;
+            max-width: 400px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        #search-bar:focus {
+            border-color: #ff4757;
+        }
+
+        /* Flexbox e Galeria */
+        .gallery-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            padding: 40px 20px;
+        }
+
+        /* Estilo do Card Individual */
+        .card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 300px;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .card-content {
+            padding: 20px;
+        }
+
+        .card-content h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .card-content p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        /* Estilo do Botão de Curtida */
+        .like-btn {
+            background-color: #ff4757;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .like-btn:hover {
+            background-color: #e84118;
+        }
+
+        .like-btn.liked {
+            background-color: #2ed573;
+        }
+    </style>
 </head>
 <body>
+
     <header>
-        <h1>Meu blog tech</h1>
-        <p>Vou compartilhar conhecimentos sobre tecnologia e programação</p>
+        <h1>📸 Meu Primeiro Feed Interativo</h1>
+        <p>Projeto criado nas aulas de Web Development e hospedado no GitHub!</p>
+        <input type="text" id="search-bar" placeholder="Pesquisar por título ou descrição...">
     </header>
 
-    <main>
-        <h2>Meu primeiro post</h2>
-        <p>Por: Marcelo Paludetto</p>
-        <p>Boas-vindas ao meu novo blog! Aqui vou compartilhar dicas de programação e curiosidades da área de tecnologia.</p>
+    <main class="gallery-container">
+
+        <!-- Card 1 -->
+        <div class="card">
+            <img src="https://picsum.photos/id/1015/300/200" alt="Paisagem de Montanha">
+            <div class="card-content">
+                <h3>Aventura nas Montanhas</h3>
+                <p>Um dia incrível explorando a natureza e testando meus códigos.</p>
+                <button class="like-btn">❤️ <span class="like-count">0</span> Curtidas</button>
+            </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card">
+            <img src="https://picsum.photos/id/1025/300/200" alt="Cachorro fofo">
+            <div class="card-content">
+                <h3>Meu Companheiro de Code</h3>
+                <p>Garante que o código não tenha nenhum bug (ou sim!).</p>
+                <button class="like-btn">❤️ <span class="like-count">0</span> Curtidas</button>
+            </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card">
+            <img src="https://picsum.photos/id/1043/300/200" alt="Espaço de trabalho">
+            <div class="card-content">
+                <h3>Setup Organizado</h3>
+                <p>Foco total nas aulas de HTML, CSS e JavaScript desta semana.</p>
+                <button class="like-btn">❤️ <span class="like-count">0</span> Curtidas</button>
+            </div>
+        </div>
+
+        <!-- Card 4 (Novo) -->
+        <div class="card">
+            <img src="https://picsum.photos/id/1069/300/200" alt="Vida Marinha">
+            <div class="card-content">
+                <h3>Mundo Marinho</h3>
+                <p>Explorando novas cores e inspirações para design web.</p>
+                <button class="like-btn">❤️ <span class="like-count">0</span> Curtidas</button>
+            </div>
+        </div>
+
+        <!-- Card 5 (Novo) -->
+        <div class="card">
+            <img src="https://picsum.photos/id/1062/300/200" alt="Wellinton Orgulho e Diversidade">
+            <div class="card-content">
+                <h3>Wellinton - Orgulho e Diversidade</h3>
+                <p>Celebrando a liberdade de ser quem você é com respeito e alegria.</p>
+                <button class="like-btn">❤️ <span class="like-count">0</span> Curtidas</button>
+            </div>
+        </div>
+
+        <!-- Card 6 (Novo) -->
+        <div class="card">
+            <img src="https://picsum.photos/id/1060/300/200" alt="Café e trabalho">
+            <div class="card-content">
+                <h3>Café e Programação</h3>
+                <p>A combinação perfeita para dar um impulso na produtividade.</p>
+                <button class="like-btn">❤️ <span class="like-count">0</span> Curtidas</button>
+            </div>
+        </div>
+
     </main>
- /body>
- </html>
+
+    <script>
+        // Lógica de Curtidas para todos os botões
+        const botoesLike = document.querySelectorAll('.like-btn');
+
+        botoesLike.forEach(function(botao) {
+            botao.addEventListener('click', function() {
+                const spanContador = botao.querySelector('.like-count');
+                let curtidasAtuais = parseInt(spanContador.textContent);
+                
+                if (botao.classList.contains('liked')) {
+                    botao.classList.remove('liked');
+                    curtidasAtuais--;
+                } else {
+                    botao.classList.add('liked');
+                    curtidasAtuais++;
+                }
+                spanContador.textContent = curtidasAtuais;
+            });
+        });
+
+        // Lógica de Pesquisa
+        const searchBar = document.getElementById('search-bar');
+        const cards = document.querySelectorAll('.card');
+
+        searchBar.addEventListener('input', function() {
+            const termoPesquisa = searchBar.value.toLowerCase();
+
+            cards.forEach(function(card) {
+                const titulo = card.querySelector('h3').textContent.toLowerCase();
+                const descricao = card.querySelector('p').textContent.toLowerCase();
+
+                if (titulo.includes(termoPesquisa) || descricao.includes(termoPesquisa)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body> 
+</html> 
