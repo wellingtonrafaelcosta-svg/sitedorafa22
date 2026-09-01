@@ -1,226 +1,520 @@
-<!<!<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RPG 3D - Simulador de Carro em Mundo Aberto</title>
+    <title>RPG 3D - Cidade, Garagem e Combate Veicular</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { overflow: hidden; background: #0f172a; color: #fff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { overflow: hidden; background: #090d16; color: #fff; user-select: none; }
         #canvas-container { width: 100vw; height: 100vh; }
         
-        /* Interface RPG (HUD) */
+        /* HUD Principal */
         .hud {
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(15, 23, 42, 0.85);
-            padding: 15px 25px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            min-width: 260px;
+            background: rgba(15, 23, 42, 0.88);
+            padding: 18px;
+            border-radius: 14px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            min-width: 280px;
             pointer-events: none;
+            backdrop-filter: blur(8px);
         }
 
-        .hud h2 { font-size: 18px; color: #38bdf8; margin-bottom: 8px; }
-        .stat-bar { background: #334155; height: 10px; border-radius: 5px; overflow: hidden; margin: 6px 0 12px; }
-        .stat-fill { background: #38bdf8; height: 100%; width: 0%; transition: width 0.3s; }
+        .hud h2 { font-size: 18px; color: #38bdf8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; color: #cbd5e1; }
+        .stat-bar { background: #1e293b; height: 10px; border-radius: 6px; overflow: hidden; margin: 4px 0 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .stat-fill { background: linear-gradient(90deg, #0284c7, #38bdf8); height: 100%; width: 0%; transition: width 0.3s ease; }
         
+        /* Painel de Garagem / Troca de Carro */
+        .garage-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(15, 23, 42, 0.88);
+            padding: 15px;
+            border-radius: 14px;
+            border: 1px solid rgba(234, 179, 8, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            backdrop-filter: blur(8px);
+        }
+        
+        .garage-btn {
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid #334155;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .garage-btn:hover { background: #3b82f6; border-color: #60a5fa; transform: translateY(-1px); }
+
+        /* Indicador de Arma / Mira */
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(239, 68, 68, 0.8);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 4px; height: 4px;
+            background: #ef4444;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Caixa de Missão / Tutorial */
         .quest-box {
             position: absolute;
             bottom: 25px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.9);
-            padding: 12px 24px;
+            background: rgba(15, 23, 42, 0.92);
+            padding: 12px 28px;
             border-radius: 30px;
             border: 1px solid #eab308;
             color: #fef08a;
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 14px;
             pointer-events: none;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 25px rgba(0,0,0,0.6);
+            text-align: center;
         }
     </style>
-    <!-- Engine 3D Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
     <div class="hud">
-        <h2>🏎️ Status do Veículo</h2>
-        <div>Nível: <span id="level">1</span></div>
+        <h2>🚘 Garagem & Stats</h2>
+        <div class="stat-row"><span>Nível:</span><strong id="level">1</strong></div>
         <div class="stat-bar"><div id="xp-bar" class="stat-fill"></div></div>
-        <div>Velocidade Máxima: <span id="stat-speed">60</span> km/h</div>
-        <div>Moedas: 🪙 <span id="gold">0</span></div>
+        <div class="stat-row"><span>Veículo:</span><strong id="car-name" style="color:#38bdf8">Esportivo GT</strong></div>
+        <div class="stat-row"><span>Velocidade Máx:</span><span id="stat-speed">90 km/h</span></div>
+        <div class="stat-row"><span>Moedas:</span><span style="color:#facc15">🪙 <span id="gold">0</span></span></div>
+        <div class="stat-row"><span>Alvos Destruídos:</span><span style="color:#ef4444">🎯 <span id="kills">0</span></span></div>
     </div>
 
-    <div class="quest-box" id="quest-text">🎯 Missão: Vá até o marcador amarelo para ganhar XP e Ouro!</div>
+    <div class="garage-panel">
+        <div style="font-size:12px; color:#94a3b8; font-weight:bold; margin-bottom:2px;">TROCAR VEÍCULO</div>
+        <button class="garage-btn" onclick="switchCar(0)">🏎️ Esportivo GT</button>
+        <button class="garage-btn" onclick="switchCar(1)">🛻 Suv Armado</button>
+        <button class="garage-btn" onclick="switchCar(2)">⚡ Cyber Hyper</button>
+    </div>
+
+    <div class="crosshair"></div>
+    <div class="quest-box" id="quest-text">🎮 [W,A,S,D] Dirigir | [ESPAÇO] Disparar Canhões | Destrua Drones Inimigos na Cidade!</div>
     <div id="canvas-container"></div>
 
     <script>
-        // --- 1. CONFIGURAÇÃO DA CENA 3D E CÂMERA ---
+        // --- 1. CONFIGURAÇÃO BÁSICA DE RENDERIZAÇÃO E ILUMINAÇÃO REALISTA ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0f172a);
-        scene.fog = new THREE.FogExp2(0x0f172a, 0.012);
+        scene.background = new THREE.Color(0x080e18);
+        scene.fog = new THREE.FogExp2(0x080e18, 0.008);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // --- 2. ILUMINAÇÃO AMBIENTAL E SOLAR ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // Iluminação Global e Solar com Sombras Detalhadas
+        const ambientLight = new THREE.HemisphereLight(0x38bdf8, 0x080e18, 0.4);
         scene.add(ambientLight);
 
-        const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        sunLight.position.set(50, 100, 50);
+        const sunLight = new THREE.DirectionalLight(0xfff7ed, 1.2);
+        sunLight.position.set(100, 150, 80);
         sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 10;
+        sunLight.shadow.camera.far = 400;
+        const d = 150;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
         scene.add(sunLight);
 
-        // --- 3. CONSTRUÇÃO DO MUNDO (TERRENO E CIDADE) ---
-        const groundGeo = new THREE.PlaneGeometry(600, 600);
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.receiveShadow = true;
-        scene.add(ground);
+        // --- 2. CONSTRUÇÃO DA CIDADE REALISTA (RUAS, BLOCOS E PRÉDIOS) ---
+        const CITY_SIZE = 600;
+        const BLOCK_SIZE = 60;
+        const ROAD_WIDTH = 20;
 
-        // Prédios no mapa
-        const buildings = new THREE.Group();
-        const bGeo = new THREE.BoxGeometry(1, 1, 1);
-        for(let i = 0; i < 50; i++) {
-            const bMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
-            const building = new THREE.Mesh(bGeo, bMat);
-            const w = 12 + Math.random() * 15;
-            const h = 20 + Math.random() * 45;
-            const d = 12 + Math.random() * 15;
-            building.scale.set(w, h, d);
-            
-            let x = (Math.random() - 0.5) * 500;
-            let z = (Math.random() - 0.5) * 500;
-            if(Math.abs(x) < 40 && Math.abs(z) < 40) x += 60; // Área central livre
-            
-            building.position.set(x, h/2, z);
-            building.castShadow = true;
-            building.receiveShadow = true;
-            buildings.add(building);
+        // Chão/Asfalto Geral
+        const cityGroundGeo = new THREE.PlaneGeometry(CITY_SIZE, CITY_SIZE);
+        const cityGroundMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+        const cityGround = new THREE.Mesh(cityGroundGeo, cityGroundMat);
+        cityGround.rotation.x = -Math.PI / 2;
+        cityGround.receiveShadow = true;
+        scene.add(cityGround);
+
+        // Gerador de Texturas Procedural para Janelas dos Prédios
+        function createBuildingTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 0, 128, 128);
+            ctx.fillStyle = '#fef08a';
+            for (let y = 8; y < 128; y += 16) {
+                for (let x = 8; x < 128; x += 16) {
+                    if (Math.random() > 0.4) {
+                        ctx.globalAlpha = Math.random() * 0.8 + 0.2;
+                        ctx.fillRect(x, y, 8, 10);
+                    }
+                }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            return texture;
         }
-        scene.add(buildings);
+        const buildingTexture = createBuildingTexture();
 
-        // --- 4. MODELO DO CARRO 3D ---
-        const car = new THREE.Group();
-        
-        // Chassi
-        const bodyGeo = new THREE.BoxGeometry(2.2, 0.8, 4);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.6, roughness: 0.2 });
-        const carBody = new THREE.Mesh(bodyGeo, bodyMat);
-        carBody.position.y = 0.6;
-        carBody.castShadow = true;
-        car.add(carBody);
+        const buildingsGroup = new THREE.Group();
+        const roadGroup = new THREE.Group();
 
-        // Cabine / Vidros
-        const cabinGeo = new THREE.BoxGeometry(1.8, 0.6, 2.2);
-        const cabinMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1 });
-        const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-        cabin.position.set(0, 1.2, -0.2);
-        car.add(cabin);
+        // Malha de Ruas e Edifícios
+        const halfSize = CITY_SIZE / 2;
+        for (let x = -halfSize + BLOCK_SIZE/2; x < halfSize; x += BLOCK_SIZE + ROAD_WIDTH) {
+            for (let z = -halfSize + BLOCK_SIZE/2; z < halfSize; z += BLOCK_SIZE + ROAD_WIDTH) {
+                
+                // Asfalto do Cruzamento/Rua
+                const roadGeo = new THREE.PlaneGeometry(BLOCK_SIZE + ROAD_WIDTH, BLOCK_SIZE + ROAD_WIDTH);
+                const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+                const road = new THREE.Mesh(roadGeo, roadMat);
+                road.rotation.x = -Math.PI / 2;
+                road.position.set(x, 0.01, z);
+                road.receiveShadow = true;
+                roadGroup.add(road);
 
-        scene.add(car);
+                // Evita criar prédios na zona central de respawn
+                if (Math.abs(x) < 40 && Math.abs(z) < 40) continue;
 
-        // --- 5. MARCADOR DE MISSÃO RPG ---
-        const questMarkerGeo = new THREE.CylinderGeometry(0, 3, 6, 8);
-        const questMarkerMat = new THREE.MeshBasicMaterial({ color: 0xeab308, wireframe: true });
-        const questMarker = new THREE.Mesh(questMarkerGeo, questMarkerMat);
-        questMarker.position.set(40, 3, 40);
-        scene.add(questMarker);
+                // Bloco de Prédio
+                const height = 30 + Math.random() * 70;
+                const bGeo = new THREE.BoxGeometry(BLOCK_SIZE, height, BLOCK_SIZE);
+                
+                // Material com reflexos e janelas iluminadas
+                const bMat = new THREE.MeshStandardMaterial({
+                    color: new THREE.Color().setHSL(0.6, 0.2, 0.15 + Math.random()*0.1),
+                    roughness: 0.3,
+                    metalness: 0.5,
+                    map: buildingTexture
+                });
+                bMat.map.repeat.set(2, Math.floor(height / 10));
 
-        // --- 6. SISTEMA RPG E FÍSICA ---
+                const building = new THREE.Mesh(bGeo, bMat);
+                building.position.set(x, height / 2, z);
+                building.castShadow = true;
+                building.receiveShadow = true;
+                buildingsGroup.add(building);
+            }
+        }
+        scene.add(roadGroup);
+        scene.add(buildingsGroup);
+
+        // Postes de Luz / Iluminação Noturna da Cidade
+        for (let i = -200; i <= 200; i += 80) {
+            const light = new THREE.PointLight(0x38bdf8, 0.8, 40);
+            light.position.set(i, 8, i);
+            scene.add(light);
+        }
+
+        // --- 3. MODELAGEM DOS VEÍCULOS 3D E ARMAS ---
+        const carParent = new THREE.Group();
+        scene.add(carParent);
+
+        // Faróis Dianteiros do Carro
+        const headlightL = new THREE.SpotLight(0xffffff, 2, 80, Math.PI / 6, 0.5);
+        const headlightR = new THREE.SpotLight(0xffffff, 2, 80, Math.PI / 6, 0.5);
+        headlightL.position.set(-0.8, 1, 2);
+        headlightR.position.set(0.8, 1, 2);
+        headlightL.target.position.set(-0.8, 0, 20);
+        headlightR.target.position.set(0.8, 0, 20);
+        carParent.add(headlightL); carParent.add(headlightL.target);
+        carParent.add(headlightR); carParent.add(headlightR.target);
+
+        // Modelos de Veículos
+        const vehicleConfigs = [
+            {
+                name: "Esportivo GT",
+                color: 0xef4444,
+                maxSpeed: 1.1,
+                accel: 0.025,
+                steering: 0.035,
+                createMesh: () => {
+                    const group = new THREE.Group();
+                    const body = new THREE.Mesh(
+                        new THREE.BoxGeometry(2.2, 0.7, 4.2),
+                        new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.8, roughness: 0.1 })
+                    );
+                    body.position.y = 0.5; body.castShadow = true; group.add(body);
+
+                    const cabin = new THREE.Mesh(
+                        new THREE.BoxGeometry(1.8, 0.55, 2.2),
+                        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.0 })
+                    );
+                    cabin.position.set(0, 1.05, -0.2); group.add(cabin);
+                    return group;
+                }
+            },
+            {
+                name: "SUV Armado",
+                color: 0x3b82f6,
+                maxSpeed: 0.85,
+                accel: 0.02,
+                steering: 0.028,
+                createMesh: () => {
+                    const group = new THREE.Group();
+                    const body = new THREE.Mesh(
+                        new THREE.BoxGeometry(2.5, 1.2, 4.8),
+                        new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.5, roughness: 0.3 })
+                    );
+                    body.position.y = 0.9; body.castShadow = true; group.add(body);
+
+                    // Torreta Blindada no Teto
+                    const turret = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.6, 0.6, 0.5, 12),
+                        new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9 })
+                    );
+                    turret.position.set(0, 1.7, -0.5); group.add(turret);
+                    return group;
+                }
+            },
+            {
+                name: "Cyber Hyper",
+                color: 0x10b981,
+                maxSpeed: 1.4,
+                accel: 0.035,
+                steering: 0.04,
+                createMesh: () => {
+                    const group = new THREE.Group();
+                    const body = new THREE.Mesh(
+                        new THREE.ConeGeometry(1.6, 4.8, 4),
+                        new THREE.MeshStandardMaterial({ color: 0x059669, metalness: 0.9, roughness: 0.1 })
+                    );
+                    body.rotation.x = Math.PI / 2;
+                    body.position.y = 0.5; body.castShadow = true; group.add(body);
+                    return group;
+                }
+            }
+        ];
+
+        let currentVehicleIndex = 0;
+        let activeCarMesh = null;
+
+        // Construção dos Canhões de Plasma no Carro
+        const cannonGeo = new THREE.CylinderGeometry(0.08, 0.1, 1.2);
+        const cannonMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9 });
+        const leftCannon = new THREE.Mesh(cannonGeo, cannonMat);
+        const rightCannon = new THREE.Mesh(cannonGeo, cannonMat);
+        leftCannon.rotation.x = Math.PI / 2; rightCannon.rotation.x = Math.PI / 2;
+        leftCannon.position.set(-1.1, 0.8, 0.5); rightCannon.position.set(1.1, 0.8, 0.5);
+        carParent.add(leftCannon); carParent.add(rightCannon);
+
+        function switchCar(index) {
+            currentVehicleIndex = index;
+            if (activeCarMesh) carParent.remove(activeCarMesh);
+            
+            const config = vehicleConfigs[index];
+            activeCarMesh = config.createMesh();
+            carParent.add(activeCarMesh);
+
+            playerStats.maxSpeed = config.maxSpeed;
+            playerStats.accel = config.accel;
+            playerStats.steering = config.steering;
+
+            document.getElementById('car-name').textContent = config.name;
+            document.getElementById('stat-speed').textContent = Math.round(config.maxSpeed * 110) + " km/h";
+        }
+
+        // --- 4. SISTEMA DE ARMAS, PROJÉTEIS E INIMIGOS ---
+        const bullets = [];
+        const targets = [];
+
+        function fireWeapon() {
+            const bulletGeo = new THREE.SphereGeometry(0.25, 8, 8);
+            const bulletMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+            
+            // Disparo Duplo (Esquerda e Direita)
+            [-1.1, 1.1].forEach(offsetX => {
+                const bullet = new THREE.Mesh(bulletGeo, bulletMat);
+                const spawnPos = new THREE.Vector3(offsetX, 0.8, 1.5).applyMatrix4(carParent.matrixWorld);
+                bullet.position.copy(spawnPos);
+                
+                // Direção do projétil baseada na orientação do carro
+                const dir = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), carPhysics.angle);
+                bullet.userData = { velocity: dir.multiplyScalar(2.5), life: 60 };
+                
+                scene.add(bullet);
+                bullets.push(bullet);
+            });
+        }
+
+        // Criar Drones Inimigos Flutuantes na Cidade
+        function spawnEnemyTarget() {
+            const group = new THREE.Group();
+            const core = new THREE.Mesh(
+                new THREE.IcosahedronGeometry(1.8, 0),
+                new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.8, roughness: 0.2 })
+            );
+            core.castShadow = true;
+            group.add(core);
+
+            // Anel Orbital
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(2.6, 0.15, 8, 24),
+                new THREE.MeshBasicMaterial({ color: 0xfca5a5, wireframe: true })
+            );
+            ring.rotation.x = Math.PI / 3;
+            group.add(ring);
+
+            // Posicionamento Aleatório nas Ruas
+            const x = (Math.random() - 0.5) * (CITY_SIZE - 100);
+            const z = (Math.random() - 0.5) * (CITY_SIZE - 100);
+            group.position.set(x, 4 + Math.random() * 4, z);
+            
+            scene.add(group);
+            targets.push(group);
+        }
+
+        // Gerar 12 Alvos Iniciais
+        for(let i = 0; i < 12; i++) spawnEnemyTarget();
+
+        // --- 5. SISTEMA RPG DE PROGRESSÃO ---
         let playerStats = {
             level: 1,
             xp: 0,
             maxXp: 100,
             gold: 0,
-            maxSpeed: 0.6,
-            accel: 0.015,
-            steering: 0.03
+            kills: 0,
+            maxSpeed: 1.1,
+            accel: 0.025,
+            steering: 0.035
         };
 
         let carPhysics = { speed: 0, angle: 0 };
         const keys = {};
 
-        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keydown', e => {
+            keys[e.code] = true;
+            if (e.code === 'Space') fireWeapon();
+        });
         window.addEventListener('keyup', e => keys[e.code] = false);
 
-        function checkQuestProgress() {
-            const distance = car.position.distanceTo(questMarker.position);
-            
-            // Checar se o jogador chegou na missão
-            if (distance < 6) {
-                playerStats.xp += 50;
-                playerStats.gold += 150;
+        function addReward(xpAmount, goldAmount) {
+            playerStats.xp += xpAmount;
+            playerStats.gold += goldAmount;
+            playerStats.kills++;
 
-                // Sistema de Level Up
-                if (playerStats.xp >= playerStats.maxXp) {
-                    playerStats.level++;
-                    playerStats.xp -= playerStats.maxXp;
-                    playerStats.maxXp += 50;
-                    playerStats.maxSpeed += 0.12; // Aumenta a velocidade máxima ao subir de nível
-                    playerStats.accel += 0.003;  // Melhora a aceleração
-                    document.getElementById('stat-speed').textContent = Math.round(playerStats.maxSpeed * 100);
-                }
-
-                // Atualizar HUD
-                document.getElementById('level').textContent = playerStats.level;
-                document.getElementById('gold').textContent = playerStats.gold;
-                document.getElementById('xp-bar').style.width = (playerStats.xp / playerStats.maxXp * 100) + '%';
-
-                // Reposicionar missão em um novo local
-                questMarker.position.x = (Math.random() - 0.5) * 400;
-                questMarker.position.z = (Math.random() - 0.5) * 400;
+            if (playerStats.xp >= playerStats.maxXp) {
+                playerStats.level++;
+                playerStats.xp -= playerStats.maxXp;
+                playerStats.maxXp = Math.floor(playerStats.maxXp * 1.4);
             }
+
+            document.getElementById('level').textContent = playerStats.level;
+            document.getElementById('gold').textContent = playerStats.gold;
+            document.getElementById('kills').textContent = playerStats.kills;
+            document.getElementById('xp-bar').style.width = (playerStats.xp / playerStats.maxXp * 100) + '%';
         }
 
-        // --- 7. LOOP DE ANIMAÇÃO E ATUALIZAÇÃO ---
+        // --- 6. LOOP DE ANIMAÇÃO E FÍSICA ---
+        // Inicializar com o primeiro veículo
+        switchCar(0);
+
         function animate() {
             requestAnimationFrame(animate);
 
-            // Aceleração e Ré
+            // Controle de Aceleração e Frenagem
             if (keys['ArrowUp'] || keys['KeyW']) {
                 carPhysics.speed = Math.min(carPhysics.speed + playerStats.accel, playerStats.maxSpeed);
             } else if (keys['ArrowDown'] || keys['KeyS']) {
                 carPhysics.speed = Math.max(carPhysics.speed - playerStats.accel, -playerStats.maxSpeed / 2);
             } else {
-                carPhysics.speed *= 0.96; // Fricção
+                carPhysics.speed *= 0.96; // Fricção suave
             }
 
-            // Direção do Carro
-            if (Math.abs(carPhysics.speed) > 0.001) {
+            // Direção / Curva do Veículo
+            if (Math.abs(carPhysics.speed) > 0.005) {
                 const dir = carPhysics.speed > 0 ? 1 : -1;
                 if (keys['ArrowLeft'] || keys['KeyA']) carPhysics.angle += playerStats.steering * dir;
                 if (keys['ArrowRight'] || keys['KeyD']) carPhysics.angle -= playerStats.steering * dir;
             }
 
-            // Atualização de Posição
-            car.rotation.y = carPhysics.angle;
-            car.position.x += Math.sin(carPhysics.angle) * carPhysics.speed;
-            car.position.z += Math.cos(carPhysics.angle) * carPhysics.speed;
+            // Atualização de Posição do Carro
+            carParent.rotation.y = carPhysics.angle;
+            carParent.position.x += Math.sin(carPhysics.angle) * carPhysics.speed;
+            carParent.position.z += Math.cos(carPhysics.angle) * carPhysics.speed;
 
-            // Animação do Marcador
-            questMarker.rotation.y += 0.02;
+            // Atualização dos Projéteis / Tiros
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                b.position.add(b.userData.velocity);
+                b.userData.life--;
 
-            // Câmera 3D em Terceira Pessoa (Segue o Veículo)
-            const cameraOffset = new THREE.Vector3(0, 6, -14).applyAxisAngle(new THREE.Vector3(0, 1, 0), carPhysics.angle);
-            camera.position.copy(car.position).add(cameraOffset);
-            camera.lookAt(car.position.clone().add(new THREE.Vector3(0, 1.2, 0)));
+                // Verificação de Colisão com Inimigos
+                for (let j = targets.length - 1; j >= 0; j--) {
+                    const target = targets[j];
+                    if (b.position.distanceTo(target.position) < 3.2) {
+                        // Destruir Alvo
+                        scene.remove(target);
+                        targets.splice(j, 1);
+                        
+                        // Remover Projétil
+                        scene.remove(b);
+                        bullets.splice(i, 1);
 
-            checkQuestProgress();
+                        addReward(40, 100);
+                        spawnEnemyTarget(); // Recompor alvo no mapa
+                        break;
+                    }
+                }
+
+                if (b.userData.life <= 0 && bullets[i]) {
+                    scene.remove(b);
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Animação dos Inimigos (Rotação e Flutuação)
+            targets.forEach((t, index) => {
+                t.children[0].rotation.y += 0.02;
+                t.children[1].rotation.z += 0.03;
+                t.position.y = 4 + Math.sin(Date.now() * 0.003 + index) * 1.5;
+            });
+
+            // Câmera 3D de Acompanhamento (Suave em Terceira Pessoa)
+            const cameraOffset = new THREE.Vector3(0, 5, -12).applyAxisAngle(new THREE.Vector3(0, 1, 0), carPhysics.angle);
+            camera.position.lerp(carParent.position.clone().add(cameraOffset), 0.2);
+            camera.lookAt(carParent.position.clone().add(new THREE.Vector3(0, 1.2, 0)));
+
             renderer.render(scene, camera);
         }
 
-        // Ajuste de Tela
+        // Redimensionamento de Tela
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
