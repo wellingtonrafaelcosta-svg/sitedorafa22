@@ -1,100 +1,84 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RPG 3D - Cidade, Garagem e Combate Veicular</title>
+    <title>Simulador Urbano 3D - Vida na Cidade & Combate Veicular</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { overflow: hidden; background: #090d16; color: #fff; user-select: none; }
+        body { overflow: hidden; background: #050811; color: #fff; user-select: none; }
         #canvas-container { width: 100vw; height: 100vh; }
         
-        /* HUD Principal */
         .hud {
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(15, 23, 42, 0.88);
-            padding: 18px;
-            border-radius: 14px;
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-            min-width: 280px;
+            background: rgba(10, 15, 29, 0.85);
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            min-width: 260px;
             pointer-events: none;
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
         }
 
-        .hud h2 { font-size: 18px; color: #38bdf8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; color: #cbd5e1; }
-        .stat-bar { background: #1e293b; height: 10px; border-radius: 6px; overflow: hidden; margin: 4px 0 12px; border: 1px solid rgba(255,255,255,0.05); }
-        .stat-fill { background: linear-gradient(90deg, #0284c7, #38bdf8); height: 100%; width: 0%; transition: width 0.3s ease; }
+        .hud h2 { font-size: 16px; color: #38bdf8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; color: #cbd5e1; }
+        .stat-bar { background: #1e293b; height: 8px; border-radius: 4px; overflow: hidden; margin: 4px 0 10px; }
+        .stat-fill { background: linear-gradient(90deg, #0284c7, #38bdf8); height: 100%; width: 0%; transition: width 0.3s; }
         
-        /* Painel de Garagem / Troca de Carro */
         .garage-panel {
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(15, 23, 42, 0.88);
-            padding: 15px;
-            border-radius: 14px;
+            background: rgba(10, 15, 29, 0.85);
+            padding: 14px;
+            border-radius: 12px;
             border: 1px solid rgba(234, 179, 8, 0.3);
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            backdrop-filter: blur(8px);
+            gap: 6px;
+            backdrop-filter: blur(10px);
         }
         
         .garage-btn {
             background: #1e293b;
             color: #f8fafc;
             border: 1px solid #334155;
-            padding: 8px 14px;
-            border-radius: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 13px;
+            font-weight: 600;
+            font-size: 12px;
             transition: all 0.2s;
         }
-        
-        .garage-btn:hover { background: #3b82f6; border-color: #60a5fa; transform: translateY(-1px); }
+        .garage-btn:hover { background: #0284c7; border-color: #38bdf8; }
 
-        /* Indicador de Arma / Mira */
         .crosshair {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 14px;
-            height: 14px;
+            top: 50%; left: 50%;
+            width: 12px; height: 12px;
             border: 2px solid rgba(239, 68, 68, 0.8);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
         }
-        .crosshair::after {
-            content: '';
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 4px; height: 4px;
-            background: #ef4444;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-        }
 
-        /* Caixa de Missão / Tutorial */
         .quest-box {
             position: absolute;
-            bottom: 25px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.92);
-            padding: 12px 28px;
-            border-radius: 30px;
+            background: rgba(10, 15, 29, 0.9);
+            padding: 10px 24px;
+            border-radius: 20px;
             border: 1px solid #eab308;
             color: #fef08a;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             pointer-events: none;
-            box-shadow: 0 4px 25px rgba(0,0,0,0.6);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
             text-align: center;
         }
     </style>
@@ -103,241 +87,305 @@
 <body>
 
     <div class="hud">
-        <h2>🚘 Garagem & Stats</h2>
+        <h2>🏎️ Status & Cidade</h2>
         <div class="stat-row"><span>Nível:</span><strong id="level">1</strong></div>
         <div class="stat-bar"><div id="xp-bar" class="stat-fill"></div></div>
-        <div class="stat-row"><span>Veículo:</span><strong id="car-name" style="color:#38bdf8">Esportivo GT</strong></div>
-        <div class="stat-row"><span>Velocidade Máx:</span><span id="stat-speed">90 km/h</span></div>
-        <div class="stat-row"><span>Moedas:</span><span style="color:#facc15">🪙 <span id="gold">0</span></span></div>
-        <div class="stat-row"><span>Alvos Destruídos:</span><span style="color:#ef4444">🎯 <span id="kills">0</span></span></div>
+        <div class="stat-row"><span>Veículo:</span><strong id="car-name" style="color:#38bdf8">Supercarro V8</strong></div>
+        <div class="stat-row"><span>Velocidade:</span><span id="stat-speed">0 km/h</span></div>
+        <div class="stat-row"><span>Créditos:</span><span style="color:#facc15">🪙 <span id="gold">0</span></span></div>
+        <div class="stat-row"><span>PopulaçãoAtiva:</span><span style="color:#4ade80"><span id="pop-count">0</span> Cidadãos</span></div>
     </div>
 
     <div class="garage-panel">
-        <div style="font-size:12px; color:#94a3b8; font-weight:bold; margin-bottom:2px;">TROCAR VEÍCULO</div>
-        <button class="garage-btn" onclick="switchCar(0)">🏎️ Esportivo GT</button>
-        <button class="garage-btn" onclick="switchCar(1)">🛻 Suv Armado</button>
-        <button class="garage-btn" onclick="switchCar(2)">⚡ Cyber Hyper</button>
+        <div style="font-size:11px; color:#94a3b8; font-weight:bold;">SELEÇÃO DE VEÍCULO</div>
+        <button class="garage-btn" onclick="switchCar(0)">🏎️ Supercarro V8</button>
+        <button class="garage-btn" onclick="switchCar(1)">🛻 SUV Tático</button>
+        <button class="garage-btn" onclick="switchCar(2)">⚡ Hypercar Neon</button>
     </div>
 
     <div class="crosshair"></div>
-    <div class="quest-box" id="quest-text">🎮 [W,A,S,D] Dirigir | [ESPAÇO] Disparar Canhões | Destrua Drones Inimigos na Cidade!</div>
+    <div class="quest-box" id="quest-text">🎮 [W,A,S,D] Dirigir | [ESPAÇO] Atirar Canhão | Explore a cidade com lojas, pedestres e cães!</div>
     <div id="canvas-container"></div>
 
     <script>
-        // --- 1. CONFIGURAÇÃO BÁSICA DE RENDERIZAÇÃO E ILUMINAÇÃO REALISTA ---
+        // --- 1. CONFIGURAÇÃO DE RENDERIZAÇÃO CINEMATOGRÁFICA ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x080e18);
-        scene.fog = new THREE.FogExp2(0x080e18, 0.008);
+        scene.background = new THREE.Color(0x0c1322);
+        scene.fog = new THREE.FogExp2(0x0c1322, 0.005);
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        // Renderização Cinematográfica e Tone Mapping estilo Câmera RAW
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.1;
         container.appendChild(renderer.domElement);
 
-        // Iluminação Global e Solar com Sombras Detalhadas
-        const ambientLight = new THREE.HemisphereLight(0x38bdf8, 0x080e18, 0.4);
+        // --- 2. ILUMINAÇÃO AMBIENTAL E LUZ SOLAR (GOLDEN HOUR) ---
+        const ambientLight = new THREE.HemisphereLight(0xdbeafe, 0x0f172a, 0.5);
         scene.add(ambientLight);
 
-        const sunLight = new THREE.DirectionalLight(0xfff7ed, 1.2);
-        sunLight.position.set(100, 150, 80);
+        const sunLight = new THREE.DirectionalLight(0xffedd5, 1.8);
+        sunLight.position.set(120, 90, 80);
         sunLight.castShadow = true;
         sunLight.shadow.mapSize.width = 2048;
         sunLight.shadow.mapSize.height = 2048;
         sunLight.shadow.camera.near = 10;
-        sunLight.shadow.camera.far = 400;
-        const d = 150;
+        sunLight.shadow.camera.far = 350;
+        const d = 160;
         sunLight.shadow.camera.left = -d;
         sunLight.shadow.camera.right = d;
         sunLight.shadow.camera.top = d;
         sunLight.shadow.camera.bottom = -d;
         scene.add(sunLight);
 
-        // --- 2. CONSTRUÇÃO DA CIDADE REALISTA (RUAS, BLOCOS E PRÉDIOS) ---
-        const CITY_SIZE = 600;
-        const BLOCK_SIZE = 60;
-        const ROAD_WIDTH = 20;
+        // --- 3. CONSTRUÇÃO DA CIDADE REALISTA (LOJAS, CASAS, RUAS E POSTES) ---
+        const CITY_SIZE = 500;
+        const BLOCK_SIZE = 50;
+        const ROAD_WIDTH = 18;
+        const SIDEWALK_WIDTH = 4;
 
-        // Chão/Asfalto Geral
+        // Asfalto Principal
         const cityGroundGeo = new THREE.PlaneGeometry(CITY_SIZE, CITY_SIZE);
-        const cityGroundMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+        const cityGroundMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.85, metalness: 0.1 });
         const cityGround = new THREE.Mesh(cityGroundGeo, cityGroundMat);
         cityGround.rotation.x = -Math.PI / 2;
         cityGround.receiveShadow = true;
         scene.add(cityGround);
 
-        // Gerador de Texturas Procedural para Janelas dos Prédios
-        function createBuildingTexture() {
+        const buildingsGroup = new THREE.Group();
+        const streetLightsGroup = new THREE.Group();
+        const npcs = []; // Pedestres e Cães
+
+        // Textura procedural para janelas de lojas e prédios
+        function createStoreTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 128; canvas.height = 128;
+            canvas.width = 256; canvas.height = 256;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(0, 0, 128, 128);
-            ctx.fillStyle = '#fef08a';
-            for (let y = 8; y < 128; y += 16) {
-                for (let x = 8; x < 128; x += 16) {
-                    if (Math.random() > 0.4) {
-                        ctx.globalAlpha = Math.random() * 0.8 + 0.2;
-                        ctx.fillRect(x, y, 8, 10);
-                    }
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(0, 0, 256, 256);
+            
+            // Vitrine iluminada na base (Loja)
+            ctx.fillStyle = '#fef08a'; ctx.fillRect(10, 160, 236, 80);
+            ctx.fillStyle = '#0f172a'; ctx.fillRect(20, 170, 100, 60); ctx.fillRect(136, 170, 100, 60);
+
+            // Janelas superiores
+            ctx.fillStyle = '#38bdf8';
+            for (let y = 20; y < 140; y += 30) {
+                for (let x = 15; x < 240; x += 35) {
+                    if (Math.random() > 0.3) ctx.fillRect(x, y, 20, 20);
                 }
             }
             const texture = new THREE.CanvasTexture(canvas);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
+            texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
             return texture;
         }
-        const buildingTexture = createBuildingTexture();
+        const buildingTexture = createStoreTexture();
 
-        const buildingsGroup = new THREE.Group();
-        const roadGroup = new THREE.Group();
-
-        // Malha de Ruas e Edifícios
+        // Mapeamento da Cidade
         const halfSize = CITY_SIZE / 2;
         for (let x = -halfSize + BLOCK_SIZE/2; x < halfSize; x += BLOCK_SIZE + ROAD_WIDTH) {
             for (let z = -halfSize + BLOCK_SIZE/2; z < halfSize; z += BLOCK_SIZE + ROAD_WIDTH) {
                 
-                // Asfalto do Cruzamento/Rua
-                const roadGeo = new THREE.PlaneGeometry(BLOCK_SIZE + ROAD_WIDTH, BLOCK_SIZE + ROAD_WIDTH);
-                const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
-                const road = new THREE.Mesh(roadGeo, roadMat);
-                road.rotation.x = -Math.PI / 2;
-                road.position.set(x, 0.01, z);
-                road.receiveShadow = true;
-                roadGroup.add(road);
+                // Calçadas
+                const sidewalkGeo = new THREE.BoxGeometry(BLOCK_SIZE + SIDEWALK_WIDTH*2, 0.3, BLOCK_SIZE + SIDEWALK_WIDTH*2);
+                const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7 });
+                const sidewalk = new THREE.Mesh(sidewalkGeo, sidewalkMat);
+                sidewalk.position.set(x, 0.15, z);
+                sidewalk.receiveShadow = true;
+                scene.add(sidewalk);
 
-                // Evita criar prédios na zona central de respawn
-                if (Math.abs(x) < 40 && Math.abs(z) < 40) continue;
+                if (Math.abs(x) < 30 && Math.abs(z) < 30) continue; // Praça/Spawn livre
 
-                // Bloco de Prédio
-                const height = 30 + Math.random() * 70;
-                const bGeo = new THREE.BoxGeometry(BLOCK_SIZE, height, BLOCK_SIZE);
-                
-                // Material com reflexos e janelas iluminadas
+                // Edifícios (Lojas nos primeiros andares, Apartamentos no topo)
+                const isShop = Math.random() > 0.4;
+                const h = isShop ? 15 + Math.random() * 25 : 35 + Math.random() * 55;
+                const bGeo = new THREE.BoxGeometry(BLOCK_SIZE, h, BLOCK_SIZE);
                 const bMat = new THREE.MeshStandardMaterial({
-                    color: new THREE.Color().setHSL(0.6, 0.2, 0.15 + Math.random()*0.1),
+                    color: isShop ? 0x334155 : 0x1e293b,
                     roughness: 0.3,
-                    metalness: 0.5,
+                    metalness: 0.4,
                     map: buildingTexture
                 });
-                bMat.map.repeat.set(2, Math.floor(height / 10));
+                bMat.map.repeat.set(1, Math.floor(h / 12));
 
                 const building = new THREE.Mesh(bGeo, bMat);
-                building.position.set(x, height / 2, z);
+                building.position.set(x, h / 2 + 0.3, z);
                 building.castShadow = true;
                 building.receiveShadow = true;
                 buildingsGroup.add(building);
+
+                // Postes de Luz Iluminando as Ruas
+                const poleGeo = new THREE.CylinderGeometry(0.12, 0.15, 7);
+                const poleMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8 });
+                const lightSpotMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+
+                [[-1, -1], [1, 1]].forEach(dir => {
+                    const pole = new THREE.Mesh(poleGeo, poleMat);
+                    const px = x + (BLOCK_SIZE/2 + 2) * dir[0];
+                    const pz = z + (BLOCK_SIZE/2 + 2) * dir[1];
+                    pole.position.set(px, 3.5, pz);
+                    pole.castShadow = true;
+                    streetLightsGroup.add(pole);
+
+                    // Luminária no topo do poste
+                    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.35), lightSpotMat);
+                    bulb.position.set(px, 7, pz);
+                    streetLightsGroup.add(bulb);
+
+                    // Luz Focada nas Ruas
+                    const pLight = new THREE.SpotLight(0xfff7ed, 1.2, 25, Math.PI / 4, 0.5);
+                    pLight.position.set(px, 7, pz);
+                    pLight.target.position.set(px, 0, pz);
+                    streetLightsGroup.add(pLight);
+                    streetLightsGroup.add(pLight.target);
+                });
             }
         }
-        scene.add(roadGroup);
         scene.add(buildingsGroup);
+        scene.add(streetLightsGroup);
 
-        // Postes de Luz / Iluminação Noturna da Cidade
-        for (let i = -200; i <= 200; i += 80) {
-            const light = new THREE.PointLight(0x38bdf8, 0.8, 40);
-            light.position.set(i, 8, i);
-            scene.add(light);
+        // --- 4. POPULAÇÃO: PEDESTRES E CÃES (CIVILIZAÇÃO) ---
+        function createPedestrianMesh() {
+            const group = new THREE.Group();
+            // Corpo / Roupas variadas
+            const color = new THREE.Color().setHSL(Math.random(), 0.7, 0.5);
+            const body = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.3, 0.25, 1.4),
+                new THREE.MeshStandardMaterial({ color: color, roughness: 0.5 })
+            );
+            body.position.y = 0.9; body.castShadow = true; group.add(body);
+
+            // Cabeça / Tom de pele
+            const head = new THREE.Mesh(
+                new THREE.SphereGeometry(0.25),
+                new THREE.MeshStandardMaterial({ color: 0xfbcfe8, roughness: 0.6 })
+            );
+            head.position.y = 1.75; head.castShadow = true; group.add(head);
+
+            return group;
         }
 
-        // --- 3. MODELAGEM DOS VEÍCULOS 3D E ARMAS ---
+        function createDogMesh() {
+            const group = new THREE.Group();
+            // Corpo do Cão
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(0.4, 0.4, 0.8),
+                new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 })
+            );
+            body.position.y = 0.35; body.castShadow = true; group.add(body);
+
+            // Cabeça e Focinho
+            const head = new THREE.Mesh(
+                new THREE.BoxGeometry(0.3, 0.3, 0.35),
+                new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.8 })
+            );
+            head.position.set(0, 0.55, 0.35); head.castShadow = true; group.add(head);
+
+            return group;
+        }
+
+        // Spawna pedestres e cães nas calçadas
+        for (let i = 0; i < 35; i++) {
+            const isDog = Math.random() < 0.25;
+            const npcMesh = isDog ? createDogMesh() : createPedestrianMesh();
+            
+            const px = (Math.random() - 0.5) * (CITY_SIZE - 60);
+            const pz = (Math.random() - 0.5) * (CITY_SIZE - 60);
+            npcMesh.position.set(px, 0.1, pz);
+            
+            scene.add(npcMesh);
+            npcs.push({
+                mesh: npcMesh,
+                isDog: isDog,
+                dir: new THREE.Vector3((Math.random()-0.5)*0.08, 0, (Math.random()-0.5)*0.08),
+                changeDirTimer: Math.random() * 200
+            });
+        }
+        document.getElementById('pop-count').textContent = npcs.length;
+
+        // --- 5. CARRO HIPER-REALISTA COM RODAS, ESPELHOS E PINTURA METÁLICA ---
         const carParent = new THREE.Group();
         scene.add(carParent);
 
-        // Faróis Dianteiros do Carro
-        const headlightL = new THREE.SpotLight(0xffffff, 2, 80, Math.PI / 6, 0.5);
-        const headlightR = new THREE.SpotLight(0xffffff, 2, 80, Math.PI / 6, 0.5);
-        headlightL.position.set(-0.8, 1, 2);
-        headlightR.position.set(0.8, 1, 2);
-        headlightL.target.position.set(-0.8, 0, 20);
-        headlightR.target.position.set(0.8, 0, 20);
+        // Faróis Principais com Foco de Luz
+        const headlightL = new THREE.SpotLight(0xffffff, 3.5, 90, Math.PI / 5, 0.3);
+        const headlightR = new THREE.SpotLight(0xffffff, 3.5, 90, Math.PI / 5, 0.3);
+        headlightL.position.set(-0.85, 0.8, 2.2); headlightR.position.set(0.85, 0.8, 2.2);
+        headlightL.target.position.set(-0.85, 0, 30); headlightR.target.position.set(0.85, 0, 30);
         carParent.add(headlightL); carParent.add(headlightL.target);
         carParent.add(headlightR); carParent.add(headlightR.target);
 
-        // Modelos de Veículos
+        // Modelos de Veículos Detalhados
         const vehicleConfigs = [
             {
-                name: "Esportivo GT",
-                color: 0xef4444,
-                maxSpeed: 1.1,
-                accel: 0.025,
-                steering: 0.035,
+                name: "Supercarro V8",
+                maxSpeed: 1.2, accel: 0.028, steering: 0.038,
                 createMesh: () => {
                     const group = new THREE.Group();
-                    const body = new THREE.Mesh(
-                        new THREE.BoxGeometry(2.2, 0.7, 4.2),
-                        new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.8, roughness: 0.1 })
-                    );
+                    // Pintura Metálica com Glossy Clearcoat
+                    const paintMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.9, roughness: 0.15 });
+                    const glassMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.0 });
+                    const tireMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 });
+                    const rimMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 1.0, roughness: 0.1 });
+
+                    // Chassis Aerodinâmico
+                    const body = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.6, 4.4), paintMat);
                     body.position.y = 0.5; body.castShadow = true; group.add(body);
 
-                    const cabin = new THREE.Mesh(
-                        new THREE.BoxGeometry(1.8, 0.55, 2.2),
-                        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.0 })
-                    );
-                    cabin.position.set(0, 1.05, -0.2); group.add(cabin);
+                    // Cabine / Vidros
+                    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.55, 2.2), glassMat);
+                    cabin.position.set(0, 1.0, -0.2); group.add(cabin);
+
+                    // Aerofólio Traseiro
+                    const wing = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 0.5), paintMat);
+                    wing.position.set(0, 1.25, -2.0); group.add(wing);
+
+                    // 4 Rodas Detalhadas com Aros
+                    [[-1.0, 0.4, 1.4], [1.0, 0.4, 1.4], [-1.0, 0.4, -1.4], [1.0, 0.4, -1.4]].forEach(pos => {
+                        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.35, 24), tireMat);
+                        wheel.rotation.z = Math.PI / 2;
+                        wheel.position.set(...pos); wheel.castShadow = true;
+                        
+                        const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.36, 12), rimMat);
+                        wheel.add(rim);
+                        group.add(wheel);
+                    });
+
                     return group;
                 }
             },
             {
-                name: "SUV Armado",
-                color: 0x3b82f6,
-                maxSpeed: 0.85,
-                accel: 0.02,
-                steering: 0.028,
+                name: "SUV Tático",
+                maxSpeed: 0.9, accel: 0.022, steering: 0.028,
                 createMesh: () => {
                     const group = new THREE.Group();
-                    const body = new THREE.Mesh(
-                        new THREE.BoxGeometry(2.5, 1.2, 4.8),
-                        new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.5, roughness: 0.3 })
-                    );
+                    const paintMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.6, roughness: 0.3 });
+                    const body = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 4.6), paintMat);
                     body.position.y = 0.9; body.castShadow = true; group.add(body);
-
-                    // Torreta Blindada no Teto
-                    const turret = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.6, 0.6, 0.5, 12),
-                        new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9 })
-                    );
-                    turret.position.set(0, 1.7, -0.5); group.add(turret);
                     return group;
                 }
             },
             {
-                name: "Cyber Hyper",
-                color: 0x10b981,
-                maxSpeed: 1.4,
-                accel: 0.035,
-                steering: 0.04,
+                name: "Hypercar Neon",
+                maxSpeed: 1.5, accel: 0.038, steering: 0.042,
                 createMesh: () => {
                     const group = new THREE.Group();
-                    const body = new THREE.Mesh(
-                        new THREE.ConeGeometry(1.6, 4.8, 4),
-                        new THREE.MeshStandardMaterial({ color: 0x059669, metalness: 0.9, roughness: 0.1 })
-                    );
-                    body.rotation.x = Math.PI / 2;
-                    body.position.y = 0.5; body.castShadow = true; group.add(body);
+                    const paintMat = new THREE.MeshStandardMaterial({ color: 0x059669, metalness: 0.95, roughness: 0.05 });
+                    const body = new THREE.Mesh(new THREE.ConeGeometry(1.5, 4.6, 5), paintMat);
+                    body.rotation.x = Math.PI / 2; body.position.y = 0.5; body.castShadow = true; group.add(body);
                     return group;
                 }
             }
         ];
 
-        let currentVehicleIndex = 0;
         let activeCarMesh = null;
-
-        // Construção dos Canhões de Plasma no Carro
-        const cannonGeo = new THREE.CylinderGeometry(0.08, 0.1, 1.2);
-        const cannonMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9 });
-        const leftCannon = new THREE.Mesh(cannonGeo, cannonMat);
-        const rightCannon = new THREE.Mesh(cannonGeo, cannonMat);
-        leftCannon.rotation.x = Math.PI / 2; rightCannon.rotation.x = Math.PI / 2;
-        leftCannon.position.set(-1.1, 0.8, 0.5); rightCannon.position.set(1.1, 0.8, 0.5);
-        carParent.add(leftCannon); carParent.add(rightCannon);
-
         function switchCar(index) {
-            currentVehicleIndex = index;
             if (activeCarMesh) carParent.remove(activeCarMesh);
-            
             const config = vehicleConfigs[index];
             activeCarMesh = config.createMesh();
             carParent.add(activeCarMesh);
@@ -347,74 +395,48 @@
             playerStats.steering = config.steering;
 
             document.getElementById('car-name').textContent = config.name;
-            document.getElementById('stat-speed').textContent = Math.round(config.maxSpeed * 110) + " km/h";
         }
 
-        // --- 4. SISTEMA DE ARMAS, PROJÉTEIS E INIMIGOS ---
+        // --- 6. ARMAS, PROJÉTEIS E INIMIGOS ---
         const bullets = [];
         const targets = [];
 
         function fireWeapon() {
-            const bulletGeo = new THREE.SphereGeometry(0.25, 8, 8);
+            const bulletGeo = new THREE.SphereGeometry(0.22, 8, 8);
             const bulletMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
             
-            // Disparo Duplo (Esquerda e Direita)
-            [-1.1, 1.1].forEach(offsetX => {
+            [-0.9, 0.9].forEach(offsetX => {
                 const bullet = new THREE.Mesh(bulletGeo, bulletMat);
-                const spawnPos = new THREE.Vector3(offsetX, 0.8, 1.5).applyMatrix4(carParent.matrixWorld);
+                const spawnPos = new THREE.Vector3(offsetX, 0.8, 1.8).applyMatrix4(carParent.matrixWorld);
                 bullet.position.copy(spawnPos);
                 
-                // Direção do projétil baseada na orientação do carro
                 const dir = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), carPhysics.angle);
-                bullet.userData = { velocity: dir.multiplyScalar(2.5), life: 60 };
+                bullet.userData = { velocity: dir.multiplyScalar(2.6), life: 55 };
                 
                 scene.add(bullet);
                 bullets.push(bullet);
             });
         }
 
-        // Criar Drones Inimigos Flutuantes na Cidade
-        function spawnEnemyTarget() {
+        function spawnDroneTarget() {
             const group = new THREE.Group();
             const core = new THREE.Mesh(
-                new THREE.IcosahedronGeometry(1.8, 0),
-                new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.8, roughness: 0.2 })
+                new THREE.OctahedronGeometry(1.6),
+                new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.9, roughness: 0.1 })
             );
-            core.castShadow = true;
-            group.add(core);
+            core.castShadow = true; group.add(core);
 
-            // Anel Orbital
-            const ring = new THREE.Mesh(
-                new THREE.TorusGeometry(2.6, 0.15, 8, 24),
-                new THREE.MeshBasicMaterial({ color: 0xfca5a5, wireframe: true })
-            );
-            ring.rotation.x = Math.PI / 3;
-            group.add(ring);
-
-            // Posicionamento Aleatório nas Ruas
-            const x = (Math.random() - 0.5) * (CITY_SIZE - 100);
-            const z = (Math.random() - 0.5) * (CITY_SIZE - 100);
-            group.position.set(x, 4 + Math.random() * 4, z);
+            const x = (Math.random() - 0.5) * (CITY_SIZE - 80);
+            const z = (Math.random() - 0.5) * (CITY_SIZE - 80);
+            group.position.set(x, 5 + Math.random() * 4, z);
             
             scene.add(group);
             targets.push(group);
         }
+        for(let i = 0; i < 10; i++) spawnDroneTarget();
 
-        // Gerar 12 Alvos Iniciais
-        for(let i = 0; i < 12; i++) spawnEnemyTarget();
-
-        // --- 5. SISTEMA RPG DE PROGRESSÃO ---
-        let playerStats = {
-            level: 1,
-            xp: 0,
-            maxXp: 100,
-            gold: 0,
-            kills: 0,
-            maxSpeed: 1.1,
-            accel: 0.025,
-            steering: 0.035
-        };
-
+        // --- 7. PROGRESSÃO RPG & FÍSICA ---
+        let playerStats = { level: 1, xp: 0, maxXp: 100, gold: 0, maxSpeed: 1.2, accel: 0.028, steering: 0.038 };
         let carPhysics = { speed: 0, angle: 0 };
         const keys = {};
 
@@ -424,97 +446,85 @@
         });
         window.addEventListener('keyup', e => keys[e.code] = false);
 
-        function addReward(xpAmount, goldAmount) {
-            playerStats.xp += xpAmount;
-            playerStats.gold += goldAmount;
-            playerStats.kills++;
-
-            if (playerStats.xp >= playerStats.maxXp) {
-                playerStats.level++;
-                playerStats.xp -= playerStats.maxXp;
-                playerStats.maxXp = Math.floor(playerStats.maxXp * 1.4);
-            }
-
-            document.getElementById('level').textContent = playerStats.level;
-            document.getElementById('gold').textContent = playerStats.gold;
-            document.getElementById('kills').textContent = playerStats.kills;
-            document.getElementById('xp-bar').style.width = (playerStats.xp / playerStats.maxXp * 100) + '%';
-        }
-
-        // --- 6. LOOP DE ANIMAÇÃO E FÍSICA ---
-        // Inicializar com o primeiro veículo
         switchCar(0);
 
+        // Loop Principal do Jogo
         function animate() {
             requestAnimationFrame(animate);
 
-            // Controle de Aceleração e Frenagem
+            // Controles do Veículo
             if (keys['ArrowUp'] || keys['KeyW']) {
                 carPhysics.speed = Math.min(carPhysics.speed + playerStats.accel, playerStats.maxSpeed);
             } else if (keys['ArrowDown'] || keys['KeyS']) {
                 carPhysics.speed = Math.max(carPhysics.speed - playerStats.accel, -playerStats.maxSpeed / 2);
             } else {
-                carPhysics.speed *= 0.96; // Fricção suave
+                carPhysics.speed *= 0.96;
             }
 
-            // Direção / Curva do Veículo
             if (Math.abs(carPhysics.speed) > 0.005) {
                 const dir = carPhysics.speed > 0 ? 1 : -1;
                 if (keys['ArrowLeft'] || keys['KeyA']) carPhysics.angle += playerStats.steering * dir;
                 if (keys['ArrowRight'] || keys['KeyD']) carPhysics.angle -= playerStats.steering * dir;
             }
 
-            // Atualização de Posição do Carro
             carParent.rotation.y = carPhysics.angle;
             carParent.position.x += Math.sin(carPhysics.angle) * carPhysics.speed;
             carParent.position.z += Math.cos(carPhysics.angle) * carPhysics.speed;
 
-            // Atualização dos Projéteis / Tiros
+            document.getElementById('stat-speed').textContent = Math.round(Math.abs(carPhysics.speed) * 120) + " km/h";
+
+            // Movimentação Autônoma da População (Pedestres e Cães)
+            npcs.forEach(npc => {
+                npc.mesh.position.add(npc.dir);
+                npc.changeDirTimer--;
+                if (npc.changeDirTimer <= 0 || Math.abs(npc.mesh.position.x) > CITY_SIZE/2 - 10) {
+                    npc.dir.set((Math.random()-0.5)*0.06, 0, (Math.random()-0.5)*0.06);
+                    npc.changeDirTimer = 150 + Math.random() * 200;
+                    npc.mesh.rotation.y = Math.atan2(npc.dir.x, npc.dir.z);
+                }
+            });
+
+            // Tiros e Colisões
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
                 b.position.add(b.userData.velocity);
                 b.userData.life--;
 
-                // Verificação de Colisão com Inimigos
                 for (let j = targets.length - 1; j >= 0; j--) {
                     const target = targets[j];
-                    if (b.position.distanceTo(target.position) < 3.2) {
-                        // Destruir Alvo
-                        scene.remove(target);
-                        targets.splice(j, 1);
-                        
-                        // Remover Projétil
-                        scene.remove(b);
-                        bullets.splice(i, 1);
+                    if (b.position.distanceTo(target.position) < 2.8) {
+                        scene.remove(target); targets.splice(j, 1);
+                        scene.remove(b); bullets.splice(i, 1);
 
-                        addReward(40, 100);
-                        spawnEnemyTarget(); // Recompor alvo no mapa
+                        playerStats.xp += 35; playerStats.gold += 80;
+                        if(playerStats.xp >= playerStats.maxXp) {
+                            playerStats.level++; playerStats.xp = 0;
+                        }
+                        document.getElementById('level').textContent = playerStats.level;
+                        document.getElementById('gold').textContent = playerStats.gold;
+                        document.getElementById('xp-bar').style.width = (playerStats.xp / playerStats.maxXp * 100) + '%';
+
+                        spawnDroneTarget();
                         break;
                     }
                 }
 
                 if (b.userData.life <= 0 && bullets[i]) {
-                    scene.remove(b);
-                    bullets.splice(i, 1);
+                    scene.remove(b); bullets.splice(i, 1);
                 }
             }
 
-            // Animação dos Inimigos (Rotação e Flutuação)
-            targets.forEach((t, index) => {
-                t.children[0].rotation.y += 0.02;
-                t.children[1].rotation.z += 0.03;
-                t.position.y = 4 + Math.sin(Date.now() * 0.003 + index) * 1.5;
-            });
+            // Animação dos Drones
+            targets.forEach(t => t.rotation.y += 0.02);
 
-            // Câmera 3D de Acompanhamento (Suave em Terceira Pessoa)
-            const cameraOffset = new THREE.Vector3(0, 5, -12).applyAxisAngle(new THREE.Vector3(0, 1, 0), carPhysics.angle);
-            camera.position.lerp(carParent.position.clone().add(cameraOffset), 0.2);
-            camera.lookAt(carParent.position.clone().add(new THREE.Vector3(0, 1.2, 0)));
+            // Câmera DSLR / Seguidora com campo de visão suave
+            const cameraOffset = new THREE.Vector3(0, 4.5, -11).applyAxisAngle(new THREE.Vector3(0, 1, 0), carPhysics.angle);
+            camera.position.lerp(carParent.position.clone().add(cameraOffset), 0.15);
+            camera.lookAt(carParent.position.clone().add(new THREE.Vector3(0, 1.0, 0)));
 
             renderer.render(scene, camera);
         }
 
-        // Redimensionamento de Tela
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
